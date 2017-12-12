@@ -5,8 +5,25 @@
 #include "BT_Files.h"
 #include "ogrsf_frmts.h"
 #include <string.h>
+void test()
+{
+	GDALAllRegister();
+	OGRRegisterAll();
+	CPLSetConfigOption("GDAL_FILENAME_IS_UTF8", "NO");
+	const char *pszDriverName = "ESRI Shapefile";
+	//OGRSFDriver *poDriver = (OGRSFDriver *)OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(pszDriverName);
+	//OGRDataSource *shpDataSource = poDriver->CreateDataSource("C:\\temp\\asf", NULL);
 
+	GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName(pszDriverName);
+	if (poDriver == NULL)
+	{
+		printf("%s driver not available.\n", pszDriverName); exit(1);
+	}
+	GDALDataset *poDS; 
+	poDS = poDriver->Create("C:\\temp\\asf", 0, 0, 0, GDT_Unknown, NULL);
+	poDS->CreateLayer("ff", NULL, wkbLineString, NULL);
 
+}
 
 int main(int argc, char **argv)
 {
@@ -58,7 +75,9 @@ int main(int argc, char **argv)
 	//把数据保存到临时文件MEM  
 	GDALDriver *pDriverMEM = GetGDALDriverManager()->GetDriverByName("MEM");
 	GDALDataset *pOutMEMDataset = pDriverMEM->Create("", m_Width, m_Height, 1, GDT_Byte, NULL);
-	unsigned char *buffer = new unsigned char[m_Width*m_Height]; //存储数据的缓冲区  
+	for (size_t i = 1; i < poSrcDS->GetRasterCount(); i++)
+		pOutMEMDataset->AddBand(GDT_Byte);
+	unsigned char *buffer = new unsigned char[m_Width*m_Height]; //存储数据的缓冲区
 	GDALRasterBand *poSrcDSRasterBand;
 	int i = 1;
 
@@ -73,11 +92,6 @@ int main(int argc, char **argv)
 		/* 以下程序是生成JPG的过程，上面的程序只为获得创建过程中的一些参数，如：图像的高、宽及图像数据*/
 
 		GDALRasterBand *pOutMEMRasterBand = pOutMEMDataset->GetRasterBand(i);
-		if (pOutMEMRasterBand == NULL)
-		{
-			pOutMEMDataset->AddBand(GDT_Byte);
-			pOutMEMRasterBand = pOutMEMDataset->GetRasterBand(i);
-		}
 		err = pOutMEMRasterBand->RasterIO(GF_Write, 0, 0, m_Width, m_Height, buffer, m_Width, m_Height, GDT_Byte, 0, 0);
 		if (err != CE_None)
 		{
